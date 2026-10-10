@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Pour by Pour: an interactive map of 106 concrete placements from Seokwon (Daniel) Lee's 2026 materials testing co-op in Metro Vancouver.">
+<title>Pour by Pour</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nothing+You+Could+Do&family=Homemade+Apple&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: field-map dashboard. Map left, live record + growing test cylinder right, scrubber under the map. */
+:root{
+  --bg:#FFFFFF; --panel:#FFFFFF; --ink:#1F2B44; --muted:#6B778C; --line:#DCE3EC;
+  --land:#F1F4EA; --land-edge:#D3DCC7; --water:#CFE3F1; --river:#CFE3F1; --water-ink:#7FA6C6;
+  --accent:#4F7FE8; --accent-soft:#E1EAFD; --hi:#FFB27A; --m1:#B4CDF8; --m2:#86A9F1;
+  --p1:#FFCDB0; --p2:#BFE6D1; --p3:#D8CEF6; --p4:#FBE3A6; --p5:#BCD8F6; --p6:#F6C8DA; --p-ink:#2A3550;
+  --concrete:#C3CAD6; --concrete-dk:#A6AFBE; --concrete-lt:#DCE1E9; color-scheme:light;
+  --display:"Bricolage Grotesque", "Arial Black", system-ui, sans-serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:20px;padding-block:28px 40px;display:grid;gap:20px}
+header{display:grid;gap:6px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(34px,6vw,64px);line-height:.95;margin:0;letter-spacing:-.02em;text-wrap:balance}
+h1 span{color:var(--accent)}
+h1 .scribble{color:var(--ink-pen)}
+.lede{margin:0;color:var(--muted);max-width:62ch}
+.memo-overlay{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:rgba(31,43,68,.28);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);transition:opacity .25s}
+.memo-overlay.closing{opacity:0}
+.memo{position:relative;width:min(540px,100%);max-height:calc(100% - 20px);overflow:auto;color:#2E2A1E;padding:26px 28px 20px 64px;border-radius:2px;transform:rotate(-1.4deg);
+  background:
+    radial-gradient(120% 60% at 30% 20%,rgba(255,255,255,.35),transparent 60%),
+    linear-gradient(115deg,transparent 38%,rgba(120,100,30,.07) 40%,transparent 44%),
+    linear-gradient(200deg,transparent 55%,rgba(120,100,30,.06) 57%,transparent 61%),
+    linear-gradient(90deg,transparent 46px,#E4908A 46px,#E4908A 47px,transparent 47px,transparent 50px,#E4908A 50px,#E4908A 51px,transparent 51px),
+    repeating-linear-gradient(180deg,transparent 0 25px,#A9C3D6 25px 26px),
+    #FBEFA3;
+  background-attachment:local;
+  box-shadow:0 1px 0 #E9D97F,0 22px 44px rgba(31,43,68,.28),inset 0 0 40px rgba(170,140,40,.12);animation:drop .45s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes drop{from{transform:translateY(-24px) rotate(-4deg);opacity:0}to{transform:rotate(-1.4deg);opacity:1}}
+.tape{position:sticky;display:block;top:-12px;margin:-38px auto 12px;width:110px;height:26px;transform:rotate(2deg);background:rgba(232,226,206,.8);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.memo h2{padding-right:30px;font-family:"Nothing You Could Do","Bradley Hand","Segoe Print",cursive;font-weight:400;font-size:25px;line-height:52px;margin:0;color:#2C3E78;letter-spacing:.01em}
+.memo-body{display:grid;gap:26px}
+.memo-body p{margin:0;font-size:14px;line-height:26px}
+.memo-body b{color:#2D2817}
+.memo-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:20px;flex-wrap:wrap}
+.sig{font-family:"Homemade Apple","Brush Script MT",cursive;font-size:20px;color:#2C3E78;transform:rotate(-4deg);display:inline-block}
+.memo-go{border:0;background:var(--accent);color:#fff;font:600 14px var(--body);padding:10px 18px;border-radius:999px;cursor:pointer}
+.memo:focus{outline:none}
+.memo-x{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;border:0;background:rgba(58,52,32,.08);color:#3A3420;cursor:pointer;display:grid;place-items:center}
+.memo-x:hover{background:rgba(58,52,32,.16)}
+.memo-x:focus-visible,.memo-go:focus-visible,.about:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.about{justify-self:start;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:500 13px var(--body);padding:6px 12px;border-radius:999px;cursor:pointer}
+.about:hover{background:var(--accent-soft)}
+@media (max-width:520px){.memo{padding:26px 18px 18px 46px;background-size:auto}.memo h2{font-size:21px}}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.stat{background:var(--panel);padding:12px 14px;display:grid;gap:2px;min-width:0}
+.stat b{font-family:var(--display);font-weight:800;font-size:clamp(22px,3vw,32px);line-height:1;font-variant-numeric:tabular-nums}
+.stat small{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.stat small::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
+.stat:nth-child(1){--c:var(--p5)}.stat:nth-child(2){--c:var(--p2)}.stat:nth-child(3){--c:var(--p1)}.stat:nth-child(4){--c:var(--p3)}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 2px rgba(31,43,68,.04),0 6px 18px rgba(31,43,68,.05)}
+.mapcard{overflow:hidden}
+#map{display:block;width:100%;height:auto;background:var(--water)}
+.controls{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:14px 16px;border-top:1px solid var(--line)}
+#play{width:44px;height:44px;border-radius:50%;border:0;background:var(--accent);color:#fff;cursor:pointer;display:grid;place-items:center;box-shadow:0 4px 0 color-mix(in srgb,var(--accent) 70%,#1F2B44)}
+#play:active{transform:translateY(2px);box-shadow:0 2px 0 color-mix(in srgb,var(--accent) 70%,#1F2B44)}
+#play:focus-visible,#scrub:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.track{display:grid;gap:4px;min-width:0}
+#scrub{width:100%;accent-color:var(--accent);margin:0}
+.months{position:relative;height:16px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.months span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.months span:first-child{transform:none}
+@media (max-width:600px){.months span:nth-child(2),.months span:nth-child(3){display:none}}
+.count{font-family:var(--mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.side{display:grid;gap:16px}
+.leftcol{display:grid;gap:22px;min-width:0}
+.rec{padding:16px;display:grid;gap:10px}
+.rec .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.rec .date{font-family:var(--display);font-weight:800;font-size:22px}
+.rec .no{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.rec dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}
+.rec dt{color:var(--muted)}
+.rec dd{margin:0;font-weight:600;min-width:0}
+.cyl{padding:16px 16px 12px;display:grid;gap:8px}
+.cyl h2,.ms h2{font-family:var(--display);font-weight:800;font-size:18px;margin:0}
+.cyl p{margin:0;font-size:13px;color:var(--muted)}
+#cylsvg{width:100%;height:auto;display:block}
+.dims{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
+.dims b{color:var(--accent)}
+.ms{padding:16px;display:grid;gap:10px}
+.ms ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.ms li{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;font-size:14px;color:var(--muted);transition:color .3s}
+.ms li .dot{width:22px;height:22px;border-radius:50%;border:2px dashed var(--line);display:grid;place-items:center;font-size:12px}
+.ms li .th{font-family:var(--mono);font-size:12px}
+.ms li.on{color:var(--ink)}
+.ms li.on .dot{border:0;background:var(--c);color:var(--p-ink)}
+.ms li.pop .dot{animation:pop .5s ease-out}
+@keyframes pop{0%{transform:scale(.4)}60%{transform:scale(1.35)}100%{transform:scale(1)}}
+.note{font-size:12px;color:var(--muted);margin:0}
+.toast{position:absolute;left:50%;top:14px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:999px;font-weight:600;font-size:14px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .25s}
+.toast.show{opacity:1}
+.mapwrap{position:relative}
+.legend{position:absolute;left:12px;bottom:12px;display:flex;flex-wrap:wrap;gap:4px 12px;background:color-mix(in srgb,var(--panel) 88%,transparent);border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:12px;color:var(--muted);max-width:calc(100% - 24px)}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend i{width:10px;height:10px;border-radius:50%;display:block}
+@media (max-width:900px){.main{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.wrap{padding-inline:16px}.toast{white-space:normal;text-align:center;width:max-content;max-width:90%}}
+
+/* ---------- paper field-notebook layer ---------- */
+:root{ --paper:#FFFDF7; --desk:#F3F0E7; --grid:rgba(110,150,200,.10); --ink-pen:#2C3E78; --tape:rgba(226,219,196,.85); --noise:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .40  0 0 0 0 .30  0 0 0 .07 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  --hand:"Nothing You Could Do","Bradley Hand","Segoe Print",cursive; }
+body{background:var(--noise),linear-gradient(var(--grid) 1px,transparent 1px) 0 0/24px 24px,linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/24px 24px,var(--desk)}
+header{position:relative}
+.scribble{font-family:var(--hand);color:var(--ink-pen);font-size:clamp(18px,2.4vw,24px);transform:rotate(-3deg);display:inline-block;margin-left:6px}
+.card,.stat,.about,.legend{background:var(--noise),var(--paper)}
+.card{border:0;border-radius:3px;box-shadow:0 1px 1px rgba(60,50,30,.08),0 8px 22px rgba(60,50,30,.10);position:relative}
+.tp::before,.tp::after{content:"";position:absolute;width:84px;height:22px;background:var(--tape);box-shadow:0 1px 2px rgba(0,0,0,.06);z-index:3}
+.tp::before{top:-10px;left:18px;transform:rotate(-6deg)}
+.tp.two::after{top:-10px;right:18px;transform:rotate(5deg)}
+.tp:not(.two)::after{display:none}
+.stats{gap:14px;background:none;border:0;border-radius:0;overflow:visible}
+.stat{border-radius:3px;padding:16px 16px 12px;box-shadow:0 1px 1px rgba(60,50,30,.08),0 6px 16px rgba(60,50,30,.08);border-top:6px solid var(--c)}
+.stat:nth-child(1){transform:rotate(-.6deg)}.stat:nth-child(2){transform:rotate(.5deg)}.stat:nth-child(3){transform:rotate(-.3deg)}.stat:nth-child(4){transform:rotate(.7deg)}
+.stat small::before{display:none}
+.mapcard{overflow:visible;padding:10px 10px 0}
+.mapwrap{overflow:hidden;border-radius:2px}
+.mapwrap::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,transparent calc(33.3% - 1px),rgba(255,255,255,.55) calc(33.3% - 1px),rgba(255,255,255,.55) 33.3%,rgba(80,70,40,.08) 33.3%,transparent calc(33.3% + 6px)),
+             linear-gradient(90deg,transparent calc(66.6% - 1px),rgba(255,255,255,.55) calc(66.6% - 1px),rgba(255,255,255,.55) 66.6%,rgba(80,70,40,.08) 66.6%,transparent calc(66.6% + 6px)),
+             linear-gradient(180deg,transparent calc(50% - 1px),rgba(255,255,255,.55) calc(50% - 1px),rgba(255,255,255,.55) 50%,rgba(80,70,40,.08) 50%,transparent calc(50% + 6px))}
+.controls{border-top:1px dashed #D9D2BE}
+.legend{border:0;border-radius:2px;box-shadow:0 1px 3px rgba(60,50,30,.15);transform:rotate(-1deg)}
+.formhead{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--muted);padding-bottom:8px;border-bottom:2px solid var(--ink)}
+.rec{padding:18px 18px 16px}
+.rec .date,.rec dd{font-family:var(--hand);color:var(--ink-pen);font-weight:400}
+.rec .date{font-size:24px}
+.rec dl{gap:0 14px}
+.rec dt{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:9px 0 3px;border-bottom:1px solid #E4DECD;align-self:end}
+.rec dd{font-size:19px;line-height:1.2;padding:6px 0 3px;border-bottom:1px solid #E4DECD}
+.cyl{background:linear-gradient(rgba(110,150,200,.16) 1px,transparent 1px) 0 0/14px 14px,linear-gradient(90deg,rgba(110,150,200,.16) 1px,transparent 1px) 0 0/14px 14px,var(--noise),var(--paper)}
+.ms{background:var(--noise),repeating-linear-gradient(180deg,transparent 0 27px,rgba(120,150,180,.35) 27px 28px),#FFF3B8;transform:rotate(-.5deg);border-radius:2px 2px 14px 2px;padding:16px 22px}
+.ms ul{gap:0 28px;grid-template-columns:repeat(2,minmax(0,1fr))} .ms li{height:28px}
+@media (max-width:620px){.ms ul{grid-template-columns:1fr}}
+.ms h2{font-family:var(--hand);font-weight:400;font-size:26px;color:var(--ink-pen);line-height:1.1}
+.ms li .dot{border-radius:5px;border:2px solid #CFC39A;background:transparent}
+.ms li.on .dot{border-color:transparent}
+.about{border:0;border-radius:2px;box-shadow:0 1px 3px rgba(60,50,30,.15);font-family:var(--mono);font-size:12px;letter-spacing:.04em}
+.note{font-family:var(--hand);font-size:17px;color:#6A6550}
+@media (max-width:520px){.stat{transform:none!important}.ms{transform:none}.legend{position:static;transform:none;box-shadow:none;margin:8px 0 0;max-width:none;background:none;padding:0 2px}}
+
+/* ---------- one-colour system: everything is a tint or shade of the accent blue ---------- */
+:root{ --b50:#F4F6FA; --b100:#E3E8F1; --b200:#C8D2E2; --b300:#A3B2CB; --b400:#7689AC; --b500:#33507F; --b600:#284270; --b700:#1F355C; --b800:#172846;
+  --ink:#1C2A4A; --muted:#62708A; --line:var(--b100); --accent:var(--b500); --accent-soft:var(--b100); --hi:var(--b800); --m1:var(--b200); --m2:var(--b400);
+  --p1:var(--b100); --p2:var(--b200); --p3:var(--b300); --p4:var(--b400); --p5:var(--b500); --p6:var(--b600); --p-ink:var(--b800);
+  --land:#FFFFFF; --land-edge:var(--b200); --water:#DEE5F0; --river:#DEE5F0; --water-ink:var(--b400);
+  --concrete:#C9D4E6; --concrete-dk:#A9B9D3; --concrete-lt:#E2E9F4;
+  --paper:#FFFFFF; --desk:#FFFFFF; --grid:rgba(51,80,127,.11); --ink-pen:var(--b800); --tape:rgba(200,210,226,.7);
+  --noise:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .25  0 0 0 0 .35  0 0 0 0 .6  0 0 0 .05 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>"); }
+body{background:linear-gradient(var(--grid) 1px,transparent 1px) 0 0/24px 24px,linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/24px 24px,#FFFFFF}
+.card,.stat{box-shadow:0 0 0 1px var(--b100),0 8px 22px rgba(32,58,115,.08)}
+.stat:nth-child(1){--c:var(--b200)}.stat:nth-child(2){--c:var(--b300)}.stat:nth-child(3){--c:var(--b400)}.stat:nth-child(4){--c:var(--b500)}
+.controls{border-top-color:var(--b200)}
+.mapwrap::after{opacity:.6}
+.rec dt,.rec dd{border-bottom-color:var(--b100)}
+.cyl{background:linear-gradient(rgba(51,80,127,.12) 1px,transparent 1px) 0 0/14px 14px,linear-gradient(90deg,rgba(51,80,127,.12) 1px,transparent 1px) 0 0/14px 14px,#FFFFFF}
+.ms{background:repeating-linear-gradient(180deg,transparent 0 27px,var(--b200) 27px 28px),var(--b50)}
+.ms li .dot{border-color:var(--b300)}
+.ms li.on .dot{color:#fff}
+.ms li.on:nth-child(-n+2) .dot{color:var(--b800)}
+.note{color:var(--muted)}
+.legend,.about{box-shadow:0 0 0 1px var(--b100),0 2px 6px rgba(32,58,115,.08)}
+.memo{color:var(--ink);
+  background:
+    radial-gradient(120% 60% at 30% 20%,rgba(255,255,255,.6),transparent 60%),
+    linear-gradient(115deg,transparent 38%,rgba(32,58,115,.05) 40%,transparent 44%),
+    linear-gradient(200deg,transparent 55%,rgba(32,58,115,.04) 57%,transparent 61%),
+    linear-gradient(90deg,transparent 46px,var(--b300) 46px,var(--b300) 47px,transparent 47px,transparent 50px,var(--b300) 50px,var(--b300) 51px,transparent 51px),
+    repeating-linear-gradient(180deg,transparent 0 25px,var(--b100) 25px 26px),
+    #FFFFFF;
+  background-attachment:local;
+  box-shadow:0 0 0 1px var(--b100),0 22px 44px rgba(32,58,115,.22),inset 0 0 40px rgba(51,80,127,.05)}
+.memo h2,.sig{color:var(--b800)}
+.memo-body b{color:var(--ink)}
+.memo-x{background:var(--b50);color:var(--b800)}
+.memo-x:hover{background:var(--b100)}
+.memo-overlay{background:rgba(32,58,115,.22)}
+.tape{background:var(--tape)}
+
+#cylsvg .stream,#cylsvg .splash,#cylsvg .drumB{display:none}
+#cylsvg.pouring .stream{display:inline;animation:pour .28s linear infinite}
+#cylsvg.pouring .splash{display:inline}
+#cylsvg.pouring .drumA{animation:blinkA .5s steps(1) infinite}
+#cylsvg.pouring .drumB{display:inline;animation:blinkB .5s steps(1) infinite}
+#cylsvg.pouring .sp{animation:hop .5s steps(3) infinite}
+#cylsvg.pouring .sp1,#cylsvg.pouring .sp3{animation-delay:.25s}
+@keyframes pour{to{stroke-dashoffset:-8}}
+@keyframes blinkA{0%{opacity:1}50%{opacity:0}}
+@keyframes blinkB{0%{opacity:0}50%{opacity:1}}
+@keyframes hop{0%{transform:translateY(0)}33%{transform:translateY(-4px)}66%{transform:translateY(-2px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Seokwon (Daniel) Lee · Materials Testing Co-op · Metro Vancouver · May–Oct 2026</div>
+    <h1>Pour by <span>Pour</span><span class="scribble">field notes from my co-op</span></h1>
+  </header>
+
+  <button class="about" id="about">About this page</button>
+
+
+  <section class="stats" aria-label="Running totals">
+    <div class="stat"><b id="s-pl">0</b><small>placements tested</small></div>
+    <div class="stat"><b id="s-si">0</b><small>construction sites</small></div>
+    <div class="stat"><b id="s-vo">0</b><small>m³ of concrete placed</small></div>
+    <div class="stat"><b id="s-tr">0</b><small>truckloads (≈9 m³ each)</small></div>
+  </section>
+
+  <div class="main">
+    <div class="leftcol">
+    <section class="card mapcard tp two">
+      <div class="mapwrap">
+        <svg id="map" role="img" aria-label="Map of Metro Vancouver showing visited construction sites"></svg>
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        <div class="legend" aria-label="Map legend"><span><i style="background:var(--m1)"></i>1 visit</span><span><i style="background:var(--m2)"></i>2–4</span><span><i style="background:var(--accent)"></i>5+</span><span><i style="background:var(--hi)"></i>current pour</span></div>
+      </div>
+      <div class="controls">
+        <button id="play" aria-label="Play">
+          <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path id="playicon" d="M4 2 L16 9 L4 16 Z" fill="currentColor"/></svg>
+        </button>
+        <div class="track">
+          <label for="scrub" class="eyebrow" style="position:absolute;left:-9999px">Placement</label>
+          <input id="scrub" type="range" min="0" value="0" step="1">
+          <div class="months" id="months" aria-hidden="true"></div>
+        </div>
+        <div class="count" id="count">1 / 106</div>
+      </div>
+    </section>
+
+    <section class="card ms">
+      <h2>Milestones</h2>
+      <ul id="ms"></ul>
+    </section>
+    </div>
+
+    <aside class="side">
+      <section class="card rec tp" aria-live="polite">
+        <div class="formhead"><span>CONCRETE PLACEMENT RECORD</span><span>EXL · FIELD</span></div>
+        <div class="top"><span class="date" id="r-date"></span><span class="no" id="r-no"></span></div>
+        <dl>
+          <dt>Site</dt><dd id="r-site"></dd>
+          <dt>Area</dt><dd id="r-area"></dd>
+          <dt>Element</dt><dd id="r-type"></dd>
+          <dt>Pour volume</dt><dd id="r-vol"></dd>
+        </dl>
+      </section>
+
+      <section class="card cyl tp">
+        <h2>One giant test cylinder</h2>
+        <p>Every pour I tested, poured into one 1:2 test cylinder, the same shape I cast on site every day.</p>
+        <svg id="cylsvg" viewBox="0 0 300 290" aria-hidden="true"></svg>
+        <div class="dims"><span>Ø <b id="c-d">15.2</b> m × H <b id="c-h">30.4</b> m</span><span><b id="c-v">0</b> m³ · <span id="c-p">0</span>%</span></div>
+      </section>
+
+    </aside>
+  </div>
+  <p class="note">Site names are anonymized and locations are approximate (neighbourhood level). Data: 106 concrete placement records from my co-op at EXL Engineering, May 11 – Oct 1, 2026.</p>
+</div>
+
+  <div class="memo-overlay" id="memo">
+    <div class="memo" tabindex="-1" id="memo-card" role="dialog" aria-modal="true" aria-labelledby="memo-title">
+      <span class="tape" aria-hidden="true"></span>
+      <button class="memo-x" id="memo-x" aria-label="Close note">
+        <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2 L12 12 M12 2 L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <h2 id="memo-title">Hi, thanks for stopping by.</h2>
+      <div class="memo-body">
+        <p><b>What this is.</b> A map of my co-op as a materials testing technician at EXL Engineering in Surrey, BC. Each stop is one concrete placement I tested in the field: slump, air content, temperature, and test cylinders for strength.</p>
+        <p><b>Why I made it.</b> "Tested 100+ placements" is hard to picture on a résumé. I wanted to show where the work happened across Metro Vancouver and how it grew, from lab-heavy weeks in May to site work on most days by September.</p>
+        <p><b>What it's built from.</b> 106 concrete placement records I filled out between May 11 and Oct 1, 2026: date, site, structural element and pour volume. Site names are replaced with numbers and locations are shown at neighbourhood level.</p>
+        <p><b>How to use it.</b> Press play to replay the season, or drag the slider to jump to any pour. The cylinder and milestones fill up as the volume adds up.</p>
+      </div>
+      <div class="memo-foot">
+        <span class="sig">Daniel</span>
+        <button class="memo-go" id="memo-go">Start exploring</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const DATA = {"vb":[633.2,370.0],"land":"M250.5,-50.0L419.2,-50.0L545.8,-20.0L630.2,40.0L672.3,130.0L672.3,250.0L647.1,340.0L596.8,400.0L521.2,430.0L420.4,430.0L344.6,429.6L293.9,428.8L268.1,427.6L267.3,426.1L266.6,424.7L265.8,423.6L265.1,422.8L264.3,422.1L263.3,421.7L262.1,421.3L260.7,421.1L259.1,421.0L256.9,421.5L254.1,422.6L250.8,424.3L246.9,426.6L238.9,428.3L226.9,429.4L210.8,430.0L190.7,430.0L175.2,429.6L164.4,428.9L158.1,427.9L156.5,426.5L154.7,425.3L152.7,424.4L150.6,423.7L148.2,423.3L145.8,422.6L143.3,421.8L140.8,420.7L138.2,419.5L135.4,418.5L132.6,417.9L129.6,417.5L126.5,417.5L123.9,417.4L121.8,417.2L120.2,416.9L119.1,416.4L118.1,416.0L117.3,415.5L116.5,414.9L115.8,414.3L115.2,413.7L114.7,412.9L114.4,412.2L114.1,411.3L113.9,409.6L113.8,407.1L113.7,403.8L113.7,399.7L113.8,395.7L114.1,392.0L114.5,388.4L115.0,385.1L115.3,381.9L115.5,379.0L115.4,376.3L115.1,373.8L115.0,371.7L115.0,370.0L115.1,368.7L115.4,367.8L115.6,367.0L115.6,366.1L115.4,365.3L115.1,364.5L114.9,362.7L114.6,359.7L114.3,355.6L114.0,350.4L113.5,345.5L112.9,340.9L112.0,336.6L110.9,332.7L110.1,329.3L109.6,326.5L109.3,324.2L109.3,322.6L109.7,321.3L110.5,320.3L111.7,319.7L113.4,319.5L114.7,319.2L115.7,318.9L116.4,318.5L116.8,318.1L117.5,317.8L118.6,317.7L119.9,317.6L121.5,317.6L123.3,317.8L125.4,318.2L127.6,318.8L130.1,319.6L134.0,320.1L139.5,320.3L146.5,320.2L155.0,319.8L161.6,319.3L166.3,318.7L169.0,317.9L169.7,317.0L170.3,316.0L170.7,315.1L171.0,314.1L171.0,313.0L170.8,312.0L170.4,311.0L169.7,310.0L168.9,309.0L167.9,308.3L166.9,307.8L165.7,307.5L164.5,307.5L163.5,307.7L162.7,307.9L162.1,308.2L161.6,308.6L160.7,308.9L159.2,309.1L157.2,309.2L154.7,309.2L152.6,309.3L150.8,309.5L149.4,309.8L148.3,310.2L147.1,310.3L145.7,310.1L144.2,309.6L142.4,308.8L140.5,308.1L138.5,307.4L136.3,306.9L134.0,306.5L132.0,306.0L130.4,305.4L129.2,304.7L128.3,303.9L126.0,302.7L122.2,301.0L116.9,298.9L110.2,296.3L104.9,293.9L101.0,291.7L98.6,289.7L97.7,287.8L96.9,285.5L96.5,282.9L96.2,280.0L96.3,276.7L96.6,273.0L97.3,269.1L98.3,264.9L99.7,260.4L100.7,256.3L101.4,252.4L101.7,248.9L101.7,245.7L101.5,243.1L101.2,241.1L100.8,239.7L100.3,238.8L98.3,238.8L94.8,239.7L89.9,241.3L83.5,243.8L77.2,246.1L70.9,248.2L64.7,250.1L58.6,251.8L53.4,253.3L49.0,254.8L45.5,256.1L43.0,257.3L40.0,258.5L36.7,259.5L33.0,260.4L28.9,261.3L25.7,261.8L23.4,261.9L22.1,261.6L21.7,261.0L21.5,260.4L21.3,259.7L21.3,259.1L21.5,258.5L22.3,257.8L23.8,257.1L26.1,256.2L29.0,255.3L31.5,254.5L33.5,253.6L35.1,252.8L36.3,252.0L37.7,251.3L39.5,250.7L41.5,250.2L43.8,249.8L45.9,249.3L47.8,248.6L49.5,247.9L51.0,247.1L52.4,246.5L53.7,246.1L55.0,245.9L56.2,245.9L57.5,245.6L58.9,245.2L60.3,244.6L61.9,243.8L63.9,243.0L66.5,242.1L69.7,241.2L73.5,240.3L76.5,239.5L79.0,238.6L80.8,237.8L82.0,237.0L83.2,236.4L84.4,236.0L85.6,235.8L86.8,235.8L87.8,235.7L88.6,235.4L89.3,235.1L89.7,234.7L90.1,234.1L90.3,233.3L90.5,232.4L90.6,231.3L90.5,230.2L90.1,229.0L89.5,227.9L88.6,226.7L87.3,225.2L85.4,223.5L83.1,221.6L80.3,219.4L78.0,217.8L76.2,216.7L74.9,216.1L74.1,216.0L73.2,215.7L72.3,215.3L71.2,214.7L70.1,213.8L69.1,212.9L68.2,211.7L67.4,210.4L66.7,209.0L66.3,207.7L66.2,206.6L66.4,205.8L66.8,205.1L67.6,205.0L68.8,205.2L70.4,206.0L72.4,207.2L74.7,208.3L77.2,209.4L80.1,210.3L83.3,211.2L85.8,212.1L87.7,212.9L88.9,213.7L89.5,214.4L90.3,215.2L91.5,216.0L93.0,216.9L94.7,217.7L96.3,218.4L97.5,218.7L98.6,218.9L99.3,218.7L100.0,218.4L100.5,217.9L101.0,217.2L101.3,216.4L101.4,215.5L101.3,214.5L101.0,213.4L100.5,212.2L99.8,210.9L99.0,209.7L97.9,208.3L96.8,206.9L95.5,205.8L94.2,204.8L92.8,204.0L91.3,203.5L89.6,202.4L87.7,200.9L85.5,199.0L83.1,196.6L81.2,194.7L79.7,193.4L78.6,192.7L78.0,192.6L77.4,192.3L76.8,191.9L76.3,191.3L75.7,190.6L75.0,190.0L74.2,189.6L73.2,189.3L72.2,189.3L71.0,188.8L69.7,188.0L68.2,186.8L66.5,185.2L65.1,184.0L63.9,183.2L62.9,182.7L62.1,182.7L61.2,182.3L60.2,181.7L59.2,180.8L58.2,179.6L56.4,178.2L54.0,176.5L50.8,174.6L47.0,172.4L44.0,170.1L41.7,167.6L40.2,165.0L39.4,162.3L38.6,159.7L37.8,157.5L37.0,155.5L36.1,153.7L35.0,151.7L33.5,149.5L31.8,147.0L29.7,144.2L28.2,141.8L27.2,139.7L26.6,137.9L26.6,136.4L26.5,135.1L26.4,134.1L26.2,133.2L25.9,132.6L25.9,131.7L26.1,130.7L26.5,129.5L27.2,128.0L28.2,126.5L29.5,124.8L31.2,123.1L33.3,121.2L35.0,119.5L36.4,118.1L37.4,116.8L38.1,115.8L38.8,114.9L39.7,114.1L40.7,113.4L41.9,112.9L43.0,112.2L44.1,111.4L45.2,110.4L46.2,109.3L47.8,108.4L49.8,107.8L52.3,107.5L55.3,107.5L57.6,107.6L59.3,107.8L60.4,108.1L60.8,108.5L61.6,108.8L62.6,109.1L64.1,109.2L65.8,109.2L67.3,109.3L68.4,109.5L69.2,109.8L69.8,110.2L70.5,110.3L71.5,110.1L72.6,109.6L74.0,108.8L75.2,108.3L76.2,108.3L77.0,108.7L77.5,109.4L78.5,110.2L79.7,111.0L81.4,111.9L83.4,112.8L86.5,113.5L90.7,114.2L96.0,114.7L102.4,115.2L107.6,115.8L111.5,116.6L114.1,117.6L115.5,118.8L116.8,119.8L118.2,120.6L119.5,121.3L120.8,121.8L121.9,122.1L122.9,122.1L123.6,121.9L124.2,121.5L125.1,121.2L126.5,121.0L128.2,120.9L130.4,120.9L132.1,121.0L133.4,121.2L134.3,121.5L134.8,121.9L136.3,122.2L138.8,122.4L142.3,122.5L146.8,122.5L150.4,122.3L153.0,121.9L154.7,121.3L155.5,120.4L156.8,119.8L158.8,119.3L161.4,119.1L164.6,119.1L167.2,118.7L169.2,118.0L170.6,116.9L171.3,115.5L172.1,114.2L172.8,113.2L173.5,112.4L174.2,111.8L175.3,111.3L176.9,111.0L178.9,110.8L181.3,110.7L183.2,110.5L184.6,110.2L185.5,109.7L185.9,109.2L186.1,108.6L186.3,108.0L186.4,107.4L186.5,106.7L186.3,105.7L185.9,104.5L185.3,102.9L184.5,101.1L183.7,99.2L183.1,97.3L182.6,95.5L182.2,93.6L181.4,91.5L180.1,89.2L178.5,86.8L176.5,84.1L174.9,81.9L173.7,80.1L173.0,78.8L172.7,77.9L172.3,77.0L171.6,76.1L170.8,75.2L169.8,74.2L168.7,73.4L167.7,72.8L166.6,72.3L165.4,72.1L164.5,71.5L163.8,70.6L163.3,69.2L163.0,67.5L162.9,66.0L162.9,64.5L163.0,63.1L163.3,61.8L163.7,60.6L164.2,59.3L164.8,58.1L165.6,56.8L166.2,55.5L166.6,54.3L166.8,53.0L166.9,51.8L167.2,50.5L167.7,49.2L168.4,47.8L169.4,46.3L170.7,45.0L172.2,43.6L174.1,42.3L176.2,41.1L178.4,40.2L180.8,39.5L183.1,39.2L185.6,39.2L187.6,39.3L189.2,39.6L190.3,39.9L190.9,40.3L191.6,41.0L192.4,42.0L193.2,43.2L194.0,44.6L194.7,45.9L195.2,47.2L195.5,48.3L195.6,49.4L196.1,50.6L196.8,52.1L197.8,53.8L199.0,55.7L200.2,57.3L201.4,58.5L202.5,59.4L203.5,60.0L204.5,60.4L205.5,60.7L206.5,60.8L207.4,60.9L208.3,61.1L209.0,61.5L209.8,62.1L210.4,62.9L211.3,63.5L212.5,64.0L214.0,64.2L215.9,64.2L217.3,64.4L218.5,64.7L219.2,65.2L219.6,65.8L219.9,66.5L220.1,67.3L220.1,68.3L220.0,69.3L219.6,70.2L219.0,70.9L218.1,71.5L217.0,71.9L215.8,72.2L214.3,72.5L212.7,72.6L211.0,72.6L209.5,72.8L208.2,73.1L207.2,73.5L206.4,74.1L205.7,74.8L205.0,75.6L204.5,76.5L204.0,77.6L203.8,78.7L203.8,79.8L204.0,80.9L204.4,82.0L205.8,82.9L208.3,83.7L211.7,84.4L216.3,85.0L220.1,85.7L223.3,86.4L225.8,87.1L227.7,88.0L229.2,88.8L230.3,89.7L231.0,90.6L231.3,91.4L231.6,92.2L232.0,92.8L232.4,93.3L232.8,93.7L233.4,93.9L234.1,94.0L235.0,94.0L236.0,93.9L237.0,93.6L237.8,92.9L238.6,92.0L239.3,90.9L240.0,90.2L240.9,89.9L241.7,90.1L242.7,90.8L243.8,91.2L245.2,91.6L246.7,91.7L248.5,91.7L250.0,91.5L251.3,91.2L252.3,90.7L253.2,90.1L254.3,90.0L255.6,90.4L257.2,91.3L259.1,92.8L260.8,93.8L262.3,94.4L263.7,94.6L264.8,94.4L265.8,94.4L266.7,94.5L267.5,94.8L268.2,95.2L268.9,95.3L269.5,95.1L270.2,94.6L270.9,93.8L271.6,93.2L272.3,92.9L273.0,92.9L273.7,93.1L274.4,93.2L275.1,93.2L275.8,93.0L276.5,92.7L277.1,92.3L277.7,91.8L278.3,91.1L278.8,90.4L279.7,89.9L281.0,89.7L282.7,89.8L284.8,90.2L286.8,89.7L288.9,88.4L290.9,86.4L292.9,83.5L294.7,81.3L296.4,79.9L298.0,79.2L299.4,79.2L300.6,79.1L301.6,78.9L302.3,78.6L302.8,78.2L303.3,78.1L303.8,78.3L304.4,78.8L305.0,79.6L305.8,80.2L306.8,80.6L307.9,80.8L309.2,80.9L310.5,81.1L311.9,81.5L313.4,82.1L314.9,82.9L316.5,83.5L318.1,83.9L319.8,84.2L321.5,84.2L323.0,84.3L324.2,84.5L325.2,84.8L325.8,85.2L326.5,85.2L327.3,84.9L328.0,84.2L328.8,83.1L329.5,81.6L330.0,79.6L330.4,77.2L330.7,74.3L330.8,72.0L330.7,70.3L330.5,69.1L330.1,68.5L329.3,68.0L328.2,67.5L326.7,67.0L324.8,66.6L322.6,65.5L320.0,63.8L316.9,61.5L313.5,58.6L310.2,56.4L307.0,55.0L304.0,54.2L301.1,54.2L298.6,54.4L296.7,54.8L295.2,55.5L294.1,56.3L293.0,57.0L291.8,57.4L290.5,57.6L289.0,57.6L287.9,57.7L286.9,57.9L286.2,58.2L285.7,58.6L284.9,58.8L283.7,58.8L282.1,58.6L280.2,58.2L278.1,57.5L275.6,56.4L272.9,55.1L269.9,53.4L267.1,51.5L264.4,49.4L261.9,47.1L259.6,44.7L257.6,42.8L255.9,41.5L254.5,40.9L253.5,40.9L252.6,41.0L251.9,41.2L251.3,41.5L250.8,41.9L250.2,42.1L249.5,42.1L248.6,41.9L247.6,41.5L246.3,41.2L244.7,41.0L242.9,40.9L240.8,40.9L239.0,41.2L237.6,41.9L236.6,42.8L235.9,44.0L235.1,45.2L234.3,46.2L233.3,47.1L232.2,48.0L231.3,48.3L230.4,48.2L229.7,47.6L229.0,46.5L228.4,45.6L227.6,44.8L226.8,44.1L226.0,43.5L224.9,43.2L223.5,43.1L222.0,43.3L220.2,43.6L218.5,43.7L216.8,43.5L215.3,43.0L213.8,42.2L212.2,41.6L210.6,41.1L208.9,40.9L207.1,40.9L205.6,40.7L204.2,40.3L203.1,39.7L202.2,38.9L201.1,38.1L199.8,37.5L198.4,37.0L196.8,36.5L195.2,35.5L193.7,34.0L192.2,31.8L190.7,29.1L188.9,27.1L186.8,25.6L184.3,24.8L181.5,24.5L178.9,23.9L176.6,22.9L174.6,21.6L172.7,19.8L170.1,18.3L166.5,17.1L162.1,16.1L156.8,15.3L152.6,14.5L149.5,13.5L147.4,12.5L146.4,11.4L145.1,10.2L143.6,9.0L141.8,7.7L139.8,6.3L138.1,5.3L136.7,4.7L135.6,4.3L134.9,4.2L133.8,3.9L132.4,3.3L130.7,2.4L128.7,1.2L126.4,0.1L123.8,-0.7L120.9,-1.3L117.8,-1.8L115.3,-2.3L113.4,-2.9L112.2,-3.6L111.7,-4.4L110.9,-5.1L109.8,-5.7L108.4,-6.2L106.8,-6.7L105.4,-7.3L104.1,-7.9L102.9,-8.7L101.9,-9.5L100.7,-10.2L99.4,-10.8L97.9,-11.1L96.2,-11.3L94.8,-11.3L93.7,-11.1L92.9,-10.7L92.3,-10.1L91.5,-9.5L90.7,-9.0L89.7,-8.5L88.6,-8.1L87.4,-7.8L86.2,-7.6L84.9,-7.5L83.6,-7.5L82.5,-7.6L81.6,-7.8L80.9,-8.1L80.5,-8.5L79.5,-8.9L78.0,-9.3L76.0,-9.7L73.4,-10.1L71.3,-10.5L69.8,-10.9L68.7,-11.4L68.2,-11.8L67.2,-11.8L65.7,-11.4L63.7,-10.5L61.2,-9.3L59.2,-8.3L57.6,-7.7L56.4,-7.4L55.5,-7.4L54.7,-7.6L53.8,-8.0L52.9,-8.6L51.9,-9.5L50.9,-10.1L49.9,-10.5L48.9,-10.7L47.8,-10.7L46.8,-10.4L45.9,-9.8L45.2,-8.9L44.5,-7.7L43.7,-6.7L42.9,-6.0L41.9,-5.6L40.9,-5.3L39.9,-4.7L39.0,-3.6L38.0,-2.2L37.2,-0.3L36.2,1.1L35.0,2.1L33.8,2.6L32.5,2.7L31.3,3.0L30.2,3.7L29.2,4.6L28.4,5.8L27.3,6.7L26.1,7.3L24.7,7.6L23.0,7.6L21.7,7.3L20.7,6.8L20.0,6.0L19.6,4.9L19.3,3.8L19.1,2.5L19.0,1.2L19.0,-0.2L18.9,-1.9L18.6,-3.7L18.2,-5.8L17.6,-8.1L17.2,-10.2L16.9,-12.0L16.8,-13.5L16.8,-14.7L16.9,-15.9L17.1,-17.0L17.3,-18.0L17.7,-19.0L17.8,-20.0L17.6,-21.0L17.2,-22.1L16.6,-23.2L16.2,-24.8L15.9,-26.7L15.9,-28.9L16.1,-31.6L16.1,-33.7L15.9,-35.2L15.6,-36.2L15.0,-36.7L14.3,-37.0L13.3,-37.0L12.1,-36.8L10.7,-36.4L9.5,-36.3L8.4,-36.5L7.4,-37.0L6.6,-37.9L5.8,-38.9L5.0,-40.0L4.3,-41.3L3.7,-42.8L2.9,-43.9L2.1,-44.7L1.2,-45.3L0.3,-45.5L-0.5,-45.9L-1.2,-46.5L-1.7,-47.4L-2.1,-48.4L39.8,-49.2L124.0,-49.7L250.5,-50.0ZM161.7,244.7L161.8,245.8L162.2,247.0L163.0,248.4L164.1,249.8L165.5,251.5L166.8,252.6L168.0,253.4L169.1,253.7L170.1,253.7L170.9,253.4L171.5,253.0L171.9,252.5L172.1,251.8L172.2,251.1L172.2,250.3L172.2,249.5L172.0,248.7L171.4,247.7L170.4,246.4L168.9,245.0L167.0,243.3L165.4,242.3L164.1,241.7L163.2,241.7L162.5,242.3L162.1,242.9L161.8,243.8L161.7,244.7Z","river":["M372.1,360.1L364.8,358.3L355.0,358.3L346.7,358.9L338.3,361.1L323.8,367.8L319.1,375.6L317.7,375.6L317.7,376.7","M685.4,236.7L668.7,231.1L648.4,228.9L647.0,228.9L648.0,230.6L637.2,229.4L612.5,229.4L580.6,233.4L567.9,233.4L559.6,236.7L551.2,237.2L525.5,248.3","M525.5,248.3L513.9,252.8L499.0,265.0L487.8,279.4L478.3,295.0L471.8,303.9L468.2,311.7L462.0,319.4L452.2,336.1L446.1,342.8L438.4,348.9L432.3,356.1L423.6,362.2L405.1,368.9L394.2,367.8L383.7,362.8L372.1,360.1","M372.1,291.3L358.6,280.6L338.7,270.0L329.6,266.7L315.9,265.0L302.5,263.9L277.4,264.5L256.4,269.5L244.1,269.5L216.1,272.2L208.2,271.7L196.9,273.3","M685.4,209.8L677.1,216.7L677.1,217.8L672.3,221.7L666.2,230.6L665.8,232.2","M478.7,274.5L480.1,275.6L458.0,276.1L441.0,281.7L435.2,285.0L427.6,291.1L421.4,298.9L417.0,302.8L405.8,304.5L397.5,303.3L386.9,299.5L372.1,291.3"],"sites":[{"n":"Site 01","a":"UBC campus","x":43.1,"y":138.0},{"n":"Site 02","a":"UBC campus","x":54.8,"y":146.0},{"n":"Site 03","a":"UBC campus","x":64.0,"y":158.0},{"n":"Site 04","a":"Coal Harbour","x":195.8,"y":89.0},{"n":"Site 05","a":"Gastown","x":231.1,"y":100.6},{"n":"Site 06","a":"Point Grey","x":107.6,"y":145.0},{"n":"Site 07","a":"West End","x":201.1,"y":108.0},{"n":"Site 08","a":"Coquitlam","x":541.1,"y":203.0},{"n":"Site 09","a":"East Vancouver","x":328.6,"y":129.0},{"n":"Site 10","a":"Surrey City Centre","x":569.2,"y":291.0},{"n":"Site 11","a":"False Creek Flats","x":248.7,"y":128.0},{"n":"Site 12","a":"Burnaby","x":346.0,"y":207.0},{"n":"Site 13","a":"Richmond","x":202.4,"y":298.0},{"n":"Site 14","a":"Burnaby Mountain","x":496.1,"y":115.0},{"n":"Site 15","a":"Point Grey","x":111.0,"y":130.0},{"n":"Site 16","a":"Mount Pleasant","x":263.7,"y":153.0},{"n":"Site 17","a":"Point Grey","x":99.9,"y":142.4},{"n":"Site 18","a":"Point Grey","x":105.1,"y":143.0},{"n":"Site 19","a":"Main Street","x":240.9,"y":163.0},{"n":"Site 20","a":"North Vancouver","x":346.0,"y":48.0},{"n":"Site 21","a":"Strathcona","x":250.7,"y":119.0},{"n":"Site 22","a":"Brentwood","x":372.1,"y":136.0},{"n":"Site 23","a":"Oakridge","x":205.0,"y":190.0},{"n":"Site 24","a":"Grandview-Woodland","x":292.7,"y":150.4},{"n":"Site 25","a":"Dunbar","x":129.2,"y":180.0},{"n":"Site 26","a":"False Creek North","x":217.0,"y":125.6},{"n":"Site 27","a":"Metrotown","x":376.0,"y":217.0},{"n":"Site 28","a":"Downtown","x":206.3,"y":100.0},{"n":"Site 29","a":"Mount Pleasant","x":237.0,"y":144.0},{"n":"Site 30","a":"Surrey City Centre","x":573.1,"y":316.0}],"recs":[{"d":"2026-05-11","s":0,"t":"Foundation wall","v":56.0},{"d":"2026-05-11","s":1,"t":"Column","v":3.0},{"d":"2026-05-13","s":2,"t":"Parapet","v":24.0},{"d":"2026-05-14","s":0,"t":"Wall","v":40.0},{"d":"2026-05-14","s":2,"t":"Core","v":46.0},{"d":"2026-05-15","s":3,"t":"Stair core","v":6.8},{"d":"2026-05-20","s":4,"t":"Column","v":9.6},{"d":"2026-05-21","s":1,"t":"Slab","v":207.0},{"d":"2026-05-22","s":5,"t":"Slab","v":10.0},{"d":"2026-05-25","s":2,"t":"Suspended Slab","v":150.0},{"d":"2026-06-02","s":2,"t":"Slab","v":140.0},{"d":"2026-06-03","s":6,"t":"Slab","v":48.0},{"d":"2026-06-03","s":1,"t":"Column","v":6.0},{"d":"2026-06-04","s":5,"t":"Slab","v":40.0},{"d":"2026-06-08","s":7,"t":"Vertical","v":10.0},{"d":"2026-06-08","s":7,"t":"Vertical","v":60.0},{"d":"2026-06-08","s":8,"t":"Elevator core","v":5.0},{"d":"2026-06-10","s":2,"t":"Column and Core","v":18.0},{"d":"2026-06-10","s":2,"t":"Column and Core","v":46.0},{"d":"2026-06-11","s":8,"t":"Slab on grade","v":84.0},{"d":"2026-06-12","s":4,"t":"Columns","v":7.0},{"d":"2026-07-15","s":9,"t":"Stair","v":144.0},{"d":"2026-07-15","s":9,"t":"Suspended Slab","v":144.0},{"d":"2026-07-21","s":10,"t":"Sidewalk Corner","v":3.2},{"d":"2026-07-21","s":11,"t":"Walls","v":3.0},{"d":"2026-07-22","s":12,"t":"Core Wall","v":79.0},{"d":"2026-07-23","s":13,"t":"Curb","v":7.1},{"d":"2026-07-24","s":9,"t":"Column","v":40.0},{"d":"2026-07-29","s":13,"t":"Suspended Slab","v":160.0},{"d":"2026-07-29","s":13,"t":"Suspended Slab","v":30.0},{"d":"2026-08-04","s":13,"t":"Suspended Slab","v":156.0},{"d":"2026-08-04","s":13,"t":"Suspended Slab","v":40.0},{"d":"2026-08-04","s":13,"t":"Verticals","v":11.0},{"d":"2026-08-05","s":12,"t":"Shear wall, Column","v":29.4},{"d":"2026-08-05","s":0,"t":"Columns","v":9.6},{"d":"2026-08-06","s":14,"t":"Suspended Slab","v":99.0},{"d":"2026-08-07","s":15,"t":"Suspended Slab","v":109.0},{"d":"2026-08-07","s":15,"t":"Core","v":46.5},{"d":"2026-08-11","s":15,"t":"Columns and Wall","v":14.5},{"d":"2026-08-13","s":16,"t":"Wall","v":48.0},{"d":"2026-08-14","s":17,"t":"Slab","v":67.0},{"d":"2026-08-14","s":1,"t":"Stair","v":8.0},{"d":"2026-08-14","s":1,"t":"Columns","v":7.5},{"d":"2026-08-19","s":18,"t":"Walls","v":40.0},{"d":"2026-08-20","s":1,"t":"Core","v":54.0},{"d":"2026-08-21","s":0,"t":"Shotcrete wall","v":64.0},{"d":"2026-08-21","s":1,"t":"Curb","v":5.0},{"d":"2026-08-24","s":0,"t":"Shotcrete Walls","v":72.0},{"d":"2026-08-24","s":2,"t":"Verticals","v":62.0},{"d":"2026-08-25","s":15,"t":"Slab on grade","v":90.0},{"d":"2026-08-25","s":19,"t":"Columns","v":17.8},{"d":"2026-08-26","s":0,"t":"Suspended Slab","v":30.0},{"d":"2026-08-26","s":12,"t":"Shear wall","v":27.0},{"d":"2026-08-27","s":13,"t":"Suspended Slab","v":20.0},{"d":"2026-08-27","s":13,"t":"Suspended Slab","v":167.0},{"d":"2026-08-28","s":19,"t":"Divider Wall","v":4.6},{"d":"2026-08-31","s":19,"t":"Suspended Slab","v":50.0},{"d":"2026-08-31","s":19,"t":"Core wall","v":37.0},{"d":"2026-08-31","s":19,"t":"Core wall","v":27.0},{"d":"2026-08-31","s":19,"t":"Columns","v":5.4},{"d":"2026-08-31","s":19,"t":"Suspended Slab","v":190.0},{"d":"2026-08-31","s":19,"t":"Suspended Slab","v":180.0},{"d":"2026-08-31","s":19,"t":"Columns","v":10.0},{"d":"2026-09-01","s":18,"t":"Shotcrete Wall","v":40.0},{"d":"2026-09-01","s":1,"t":"Core","v":54.0},{"d":"2026-09-01","s":4,"t":"Shear wall","v":18.0},{"d":"2026-09-02","s":20,"t":"Columns","v":3.0},{"d":"2026-09-02","s":13,"t":"Suspended Slab","v":60.0},{"d":"2026-09-02","s":13,"t":"Suspended Slab","v":72.8},{"d":"2026-09-03","s":20,"t":"Slab on grade","v":72.0},{"d":"2026-09-03","s":1,"t":"Columns","v":8.0},{"d":"2026-09-04","s":2,"t":"Suspended Slab","v":120.0},{"d":"2026-09-04","s":1,"t":"Columns","v":9.0},{"d":"2026-09-08","s":17,"t":"Shotcrete Walls","v":40.0},{"d":"2026-09-09","s":20,"t":"Slab on grade","v":90.0},{"d":"2026-09-09","s":17,"t":"Columns","v":4.0},{"d":"2026-09-10","s":14,"t":"Walls","v":20.0},{"d":"2026-09-10","s":21,"t":"Columns","v":3.0},{"d":"2026-09-11","s":22,"t":"Suspended Slab","v":171.0},{"d":"2026-09-14","s":20,"t":"Shotcrete Walls","v":36.0},{"d":"2026-09-14","s":20,"t":"Slab on grade","v":9.0},{"d":"2026-09-14","s":13,"t":"Stairs","v":5.0},{"d":"2026-09-15","s":13,"t":"Suspended Slab","v":140.0},{"d":"2026-09-15","s":13,"t":"Columns","v":3.0},{"d":"2026-09-16","s":23,"t":"Stair","v":3.0},{"d":"2026-09-16","s":19,"t":"Shear Walls","v":27.0},{"d":"2026-09-16","s":4,"t":"Suspended Slab","v":225.0},{"d":"2026-09-17","s":13,"t":"Columns and Wall","v":10.0},{"d":"2026-09-18","s":24,"t":"Shotcrete Wall","v":9.0},{"d":"2026-09-18","s":19,"t":"Columns","v":10.0},{"d":"2026-09-21","s":19,"t":"Shotcrete Wall","v":72.0},{"d":"2026-09-21","s":25,"t":"Protection Slab","v":9.6},{"d":"2026-09-22","s":25,"t":"Protection Slab","v":6.0},{"d":"2026-09-23","s":2,"t":"Suspended Slab (Main roof)","v":192.0},{"d":"2026-09-23","s":20,"t":"Stairs","v":4.5},{"d":"2026-09-23","s":20,"t":"Elevator pit","v":4.0},{"d":"2026-09-24","s":26,"t":"Footings and pads","v":93.6},{"d":"2026-09-24","s":2,"t":"Verticals","v":5.0},{"d":"2026-09-25","s":26,"t":"Shotcrete Walls","v":72.0},{"d":"2026-09-25","s":1,"t":"Stairs","v":4.5},{"d":"2026-09-28","s":13,"t":"Suspended Slab","v":180.0},{"d":"2026-09-28","s":2,"t":"Core, Columns, Parapet Walls","v":79.0},{"d":"2026-09-29","s":27,"t":"Shotcrete Walls","v":36.0},{"d":"2026-09-29","s":28,"t":"Columns (total of 6)","v":5.4},{"d":"2026-09-29","s":2,"t":"Verticals","v":15.0},{"d":"2026-10-01","s":29,"t":"Footings","v":40.0}],"labels":[[54.8,176.0,"UBC"],[202.4,184.0,"Vancouver"],[404.7,192.0,"Burnaby"],[280.7,20.0,"North Van"],[208.9,334.0,"Richmond"],[554.8,344.0,"Surrey"],[332.9,74.0,"Burrard Inlet"],[91.4,94.0,"English Bay"],[463.5,284.0,"Fraser River"]]};
+const NS = "http://www.w3.org/2000/svg";
+const $ = id => document.getElementById(id);
+const el = (tag, attrs={}, parent) => { const e=document.createElementNS(NS,tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if(parent) parent.appendChild(e); return e; };
+const recs = DATA.recs, sites = DATA.sites, N = recs.length;
+
+// ---------- cumulative tables ----------
+const cum=[]; { let v=0; const ss=new Set(), dd=new Set(); recs.forEach((r,i)=>{ v+=r.v; ss.add(r.s); dd.add(r.d); cum.push({v, s:ss.size, d:dd.size}); }); }
+
+// ---------- map ----------
+const map=$("map"); const [W,H]=DATA.vb;
+map.setAttribute("viewBox", `0 0 ${W} ${H}`);
+const defs=el("defs",{},map);
+defs.innerHTML = `
+ <filter id="clay" x="-10%" y="-10%" width="120%" height="130%">
+   <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000" flood-opacity=".18"/>
+ </filter>
+ <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="2" stdDeviation="1.6" flood-color="#000" flood-opacity=".28"/></filter>
+ <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#eef0f0"/><stop offset="1" stop-color="#c9cdcf"/></linearGradient>
+ <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9fd0e6"/><stop offset="1" stop-color="#4e7f98"/></linearGradient>
+ <radialGradient id="tire" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#4a4d50"/><stop offset="1" stop-color="#16181a"/></radialGradient>
+ <radialGradient id="hub" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#9da2a6"/></radialGradient>`;
+el("path",{d:DATA.land, fill:"var(--land)", stroke:"var(--land-edge)", "stroke-width":1, "stroke-linejoin":"round", "fill-rule":"evenodd", filter:"url(#clay)"},map);
+DATA.river.forEach((d,i)=>el("path",{d, fill:"none", stroke:"var(--river)", "stroke-width": 7, "stroke-linecap":"round","stroke-linejoin":"round"},map));
+DATA.labels.forEach(([x,y,t])=>{ const water=/Inlet|Bay|River/.test(t); const tx=el("text",{x,y,"text-anchor":"middle","font-family":"Figtree, sans-serif","font-size":water?9:11,"font-weight":water?500:600,"font-style":water?"italic":"normal","letter-spacing":water?".5":"1.2",fill:water?"var(--water-ink)":"var(--muted)",opacity:water?1:.75},map); tx.textContent=water?t:t.toUpperCase(); });
+
+const trailBg=el("path",{fill:"none",stroke:"var(--accent)","stroke-width":1.4,"stroke-opacity":.3,"stroke-linecap":"round"},map);
+const trailNow=el("path",{fill:"none",stroke:"var(--accent)","stroke-width":2.6,"stroke-linecap":"round","stroke-dasharray":"4 4"},map);
+const markG=el("g",{},map);
+const marks=sites.map(s=>{ const g=el("g",{transform:`translate(${s.x} ${s.y})`,opacity:0},markG);
+  const c=el("circle",{r:4,fill:"var(--accent)",stroke:"var(--panel)","stroke-width":1.5,filter:"url(#soft)"},g); return {g,c}; });
+function seg(a,b){ const A=sites[a],B=sites[b]; const mx=(A.x+B.x)/2, my=(A.y+B.y)/2; const dx=B.x-A.x, dy=B.y-A.y; const k=.18; return `M${A.x},${A.y}Q${mx-dy*k},${my+dx*k} ${B.x},${B.y}`; }
+function qpt(a,b,t){ const A=sites[a],B=sites[b]; const mx=(A.x+B.x)/2, my=(A.y+B.y)/2; const dx=B.x-A.x, dy=B.y-A.y; const cx=mx-dy*.18, cy=my+dx*.18; const u=1-t; return [u*u*A.x+2*u*t*cx+t*t*B.x, u*u*A.y+2*u*t*cy+t*t*B.y]; }
+
+// clay pickup truck (side view), ~46 x 26 units, origin at bottom-centre
+const truck=el("g",{},map);
+const tInner=el("g",{},truck);
+// pixel pickup: 24 x 13 grid, drawn from code so the two wheel frames stay aligned
+const TU=2;
+const TCOL={o:"#203A73",w:"#FFFFFF",x:"#E3E8F1",g:"#C8D2E2",k:"#172846",h:"#A3B2CB",r:"#33507F",y:"#FFFFFF",t:"#A3B2CB",s:"rgba(23,40,70,.18)"};
+function truckGrid(frame){
+  const base=["..............rr........",
+              "............oooooo......",
+              "...........oggwgggo.....",
+              "...........oggwggggo....",
+              "oooooooooooowwwwwwwwooo.",
+              "owwwwwwwwwowwwwwwwwwwwwo",
+              "twwwwwwwwwowwwwxwwwwwwwy",
+              "owwwwwwwwwowwwwwwwwwwwwo",
+              "oxxxxxxxxxxxxxxxxxxxxxxo",
+              "oooooooooooooooooooooooo",
+              "........................",
+              "........................",
+              "........................"];
+  const G=base.map(r=>r.split(""));
+  const wheel = frame ? [".kkk.","khkhk","kkwkk","khkhk",".kkk."] : [".kkk.","kkhkk","khwhk","kkhkk",".kkk."];
+  [3,16].forEach(wx=>wheel.forEach((row,dy)=>row.split("").forEach((c,dx)=>{ if(c!==".") G[8+dy][wx+dx]=c; })));
+  let o=`<rect x="${2*TU}" y="${13*TU}" width="${20*TU}" height="${TU}" fill="${TCOL.s}"/>`;
+  G.forEach((row,y)=>row.forEach((c,x)=>{ if(c!==".") o+=`<rect x="${x*TU}" y="${y*TU}" width="${TU}" height="${TU}" fill="${TCOL[c]}"/>`; }));
+  return o;
+}
+tInner.setAttribute("shape-rendering","crispEdges");
+tInner.innerHTML=`<g transform="translate(${-12*TU} ${-14*TU})"><g class="tf0">${truckGrid(0)}</g><g class="tf1" style="display:none">${truckGrid(1)}</g></g>`;
+let tFrame=0;
+function truckFrame(f){ if(f===tFrame) return; tFrame=f; tInner.querySelector(".tf0").style.display=f?"none":""; tInner.querySelector(".tf1").style.display=f?"":"none"; }
+let truckPos=[sites[0].x, sites[0].y], facing=1;
+function placeTruck(x,y,dir,bob=0){ if(dir) facing=dir; truck.setAttribute("transform",`translate(${Math.round(x)} ${Math.round(y-3-bob)}) scale(${facing*1.1} 1.1)`); truckPos=[x,y]; }
+
+// ---------- cylinder ----------
+const cyl=$("cylsvg");
+const TOTAL=cum[N-1].v, DF=Math.cbrt(2*TOTAL/Math.PI), HF=2*DF;
+$("c-d").textContent=DF.toFixed(1); $("c-h").textContent=HF.toFixed(1);
+// geometry (viewBox 300 x 290)
+const CX=190, CH=200, CW=CH/2, CTOP=62, CBOT=CTOP+CH, CRY=CW*.14, GROUND=CBOT+CRY+3;
+// ---- tiny pixel-art pump rig (mixer feeding a boom pump) ----
+const U=3, PAL={n:"var(--b500)",l:"var(--b300)",d:"var(--b400)",s:"var(--b100)",b:"var(--b200)",k:"var(--b800)",w:"var(--b50)",g:"var(--b600)",t:"var(--b700)"};
+function pix(rows,x0,y0){ let o=""; rows.forEach((r,y)=>{ for(let x=0;x<r.length;x++){ const c=r[x]; if(c!=="."&&PAL[c]) o+=`<rect x="${x0+x*U}" y="${y0+y*U}" width="${U}" height="${U}" fill="${PAL[c]}"/>`; } }); return o; }
+function drum(phase){ const rows=[]; const shape=["..lllllll..",".lddddddddl","lddddddddddl","lddddddddddl",".lddddddddl","..lllllll.."];
+  shape.forEach((r,y)=>{ let o=""; for(let x=0;x<r.length;x++){ const c=r[x]; o+= c==="d" && (x+y+phase)%4===0 ? "s" : c; } rows.push(o); }); return rows; }
+const MIX_BODY=["............nnnn","...........nbbbn","...........nbbbnn","gggggggggggnnnnnn","nnnnnnnnnnnnnnnnn",".kk.....kk....kk.","kwwk...kwwk..kwwk",".kk.....kk....kk."];
+const PUMP=["...tt.................","..tttt.........nnnn...","nnnnnnnnnnnnnnnbbbbn..","nnnnnnnnnnnnnnnbbbbnn.","nnnnnnnnnnnnnnnnnnnnnn","gnnnnnnnnnnnnnnnnnnnng","..kk.....kk......kk...",".kwwk...kwwk....kwwk..","..kk.....kk......kk..."];
+function boomPix(pts){ let o=""; for(let i=0;i<pts.length-1;i++){ const [x0,y0]=pts[i],[x1,y1]=pts[i+1]; const n=Math.ceil(Math.hypot(x1-x0,y1-y0)/U);
+  for(let k=0;k<=n;k++){ const x=Math.round((x0+(x1-x0)*k/n)/U)*U, y=Math.round((y0+(y1-y0)*k/n)/U)*U; o+=`<rect x="${x}" y="${y}" width="${U*1.5}" height="${U*1.5}" fill="var(--b600)"/>`; } } return o; }
+const mixX=2, bodyTop=GROUND-8*U, mixY=bodyTop-4*U, pumpX=mixX+17*U+2, pumpY=GROUND-9*U;
+const turret=[pumpX+4*U, pumpY], knuckle=[pumpX+15*U, CTOP+6], apex=[CX-58, CTOP-44], tip=[CX, CTOP-28];
+cyl.innerHTML=`
+  <line x1="0" x2="300" y1="${GROUND}" y2="${GROUND}" stroke="var(--b200)" stroke-width="1.5" stroke-dasharray="3 3"/>
+  <g id="cylg"></g>
+  <g class="rig" shape-rendering="crispEdges">
+    <g class="drumA">${pix(drum(0),mixX,mixY)}</g><g class="drumB">${pix(drum(2),mixX,mixY)}</g>
+    ${pix(MIX_BODY,mixX,bodyTop)}
+    <rect x="${mixX+15*U}" y="${bodyTop+2*U}" width="${U*3}" height="${U}" fill="var(--b600)"/>
+    ${pix(PUMP,pumpX,pumpY)}
+    ${boomPix([turret,knuckle,apex,tip])}
+    <rect x="${tip[0]-U}" y="${tip[1]}" width="${U*2}" height="${U*3}" fill="var(--b700)"/>
+    <line class="stream" id="stream" x1="${tip[0]}" x2="${tip[0]}" y1="${tip[1]+U*3}" y2="${CBOT}" stroke="var(--concrete-dk)" stroke-width="4" stroke-dasharray="4 4"/>
+    <g class="splash" id="splash"></g>
+  </g>`;
+const cylg=$("cylg"), stream=$("stream"), splash=$("splash");
+function drawCyl(V){
+  const cx=CX, h=CH, w=CW, top=CTOP, bot=CBOT, ry=CRY, f=Math.min(V/TOTAL,1), lvl=bot-h*f;
+  cylg.innerHTML=`
+   <ellipse cx="${cx}" cy="${bot+4}" rx="${w/2+10}" ry="${ry+4}" fill="var(--accent)" opacity=".08"/>
+   <path d="M${cx-w/2},${top} V${bot} A${w/2},${ry} 0 0 0 ${cx+w/2},${bot} V${top}" fill="var(--panel)" stroke="var(--land-edge)" stroke-width="2"/>
+   ${f>0?`<path d="M${cx-w/2},${lvl} V${bot} A${w/2},${ry} 0 0 0 ${cx+w/2},${bot} V${lvl} A${w/2},${ry} 0 0 1 ${cx-w/2},${lvl} Z" fill="var(--concrete)"/>
+   <path d="M${cx-w/2},${lvl} V${bot} A${w/2},${ry} 0 0 0 ${cx-w/2+w*.3},${bot+ry*.95} V${lvl+ry*.95} Z" fill="var(--concrete-lt)" opacity=".6"/>
+   <ellipse cx="${cx}" cy="${lvl}" rx="${w/2}" ry="${ry}" fill="var(--concrete-lt)" stroke="var(--concrete-dk)" stroke-width="1"/>`:""}
+   <ellipse cx="${cx}" cy="${top}" rx="${w/2}" ry="${ry}" fill="none" stroke="var(--land-edge)" stroke-width="2"/>
+   ${[.25,.5,.75].map(t=>`<line x1="${cx+w/2+6}" x2="${cx+w/2+14}" y1="${bot-h*t}" y2="${bot-h*t}" stroke="var(--muted)" stroke-width="1"/><text x="${cx+w/2+18}" y="${bot-h*t+3.5}" font-family="JetBrains Mono, monospace" font-size="10" fill="var(--muted)">${Math.round(TOTAL*t).toLocaleString()}</text>`).join("")}`;
+  stream.setAttribute("y2", Math.round(lvl/U)*U);
+  splash.innerHTML=[-3,-1,1,3].map((dx,i)=>`<rect class="sp sp${i}" x="${cx+dx*U*1.5}" y="${Math.round(lvl/U)*U-U*2}" width="${U}" height="${U}" fill="var(--concrete-dk)"/>`).join("");
+  $("c-v").textContent=Math.round(V).toLocaleString(); $("c-p").textContent=Math.round(f*100);
+}
+let pourTimer;
+function pourPulse(ms){ cyl.classList.add("pouring"); clearTimeout(pourTimer); if(ms) pourTimer=setTimeout(()=>{ if(!playing) cyl.classList.remove("pouring"); }, ms); }
+
+// ---------- milestones ----------
+const MS=[
+  {v:9,     t:"First truckload"},
+  {v:40,    t:"A house foundation"},
+  {v:500,   t:"500 m³ placed"},
+  {v:1000,  t:"1,000 m³ club"},
+  {v:2500,  t:"One Olympic pool"},
+  {v:5000,  t:"Two Olympic pools"},
+];
+const msUl=$("ms");
+const msLi=MS.map((m,k)=>{ const li=document.createElement("li"); li.style.setProperty("--c",`var(--p${k+1})`); li.innerHTML=`<span class="dot">✓</span><span>${m.t}</span><span class="th">${m.v.toLocaleString()} m³</span>`; msUl.appendChild(li); return li; });
+let lastIdx=-1, toastTimer;
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),1800); }
+
+// ---------- render ----------
+const fmt=n=>Math.round(n).toLocaleString();
+const dateFmt=d=>new Date(d+"T12:00:00").toLocaleDateString("en-CA",{month:"short",day:"numeric"});
+function render(i, animate){
+  const r=recs[i], c=cum[i], s=sites[r.s];
+  $("s-pl").textContent=i+1; $("s-si").textContent=c.s;
+  $("s-vo").textContent=fmt(c.v); $("s-tr").textContent=fmt(c.v/9);
+  $("r-date").textContent=dateFmt(r.d)+", 2026"; $("r-no").textContent=`#${String(i+1).padStart(3,"0")} / ${N}`;
+  $("r-site").textContent=s.n; $("r-area").textContent=s.a; $("r-type").textContent=r.t; $("r-vol").textContent=`${r.v} m³`;
+  $("count").textContent=`${i+1} / ${N}`; $("scrub").value=i;
+  // trail
+  let d=""; for(let k=1;k<i;k++) if(recs[k].s!==recs[k-1].s) d+=seg(recs[k-1].s,recs[k].s);
+  trailBg.setAttribute("d",d);
+  trailNow.setAttribute("d", i>0 && recs[i].s!==recs[i-1].s ? seg(recs[i-1].s,recs[i].s) : "");
+  // markers
+  const visits=new Array(sites.length).fill(0); for(let k=0;k<=i;k++) visits[recs[k].s]++;
+  marks.forEach((m,k)=>{ m.g.setAttribute("opacity", visits[k]?1:0); m.c.setAttribute("r", visits[k]? 3+Math.sqrt(visits[k])*1.6 : 0);
+    m.c.setAttribute("fill", k===r.s ? "var(--hi)" : visits[k]>=5 ? "var(--accent)" : visits[k]>=2 ? "var(--m2)" : "var(--m1)"); });
+  // truck
+  const prev = i>0 ? recs[i-1].s : r.s;
+  if(animate && i===lastIdx+1 && prev!==r.s && !reduce) moveTruck(prev, r.s);
+  else { cancelAnimationFrame(raf); placeTruck(s.x, s.y); }
+  drawCyl(c.v);
+  // milestones
+  MS.forEach((m,k)=>{ const on=c.v>=m.v; const was=msLi[k].classList.contains("on");
+    msLi[k].classList.toggle("on",on);
+    if(on && !was && i===lastIdx+1){ msLi[k].classList.remove("pop"); void msLi[k].offsetWidth; msLi[k].classList.add("pop"); toast(`Unlocked: ${m.t}`); } });
+  lastIdx=i;
+}
+let raf;
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function moveTruck(a,b){
+  cancelAnimationFrame(raf); const t0=performance.now(), dur=Math.min(650, stepMs-80);
+  const dir = sites[b].x>=sites[a].x ? 1 : -1;
+  (function f(now){ let t=Math.min((now-t0)/dur,1); t=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+    const [x,y]=qpt(a,b,t); const step=Math.floor((now-t0)/90); truckFrame(t<1?step%2:0); placeTruck(x,y,dir,t<1?(step%2):0); if(t<1) raf=requestAnimationFrame(f); })(t0);
+}
+
+// ---------- controls ----------
+const scrub=$("scrub"); scrub.max=N-1;
+{ const seen=new Set(), box=$("months"); recs.forEach((r,i)=>{ const m=r.d.slice(5,7); if(seen.has(m)) return; seen.add(m);
+  const sp=document.createElement("span"); sp.textContent=new Date(r.d+"T12:00:00").toLocaleDateString("en-CA",{month:"short"}).replace(".","");
+  const pct=i/(N-1)*100; sp.style.left=pct+"%"; sp.dataset.p=pct; box.appendChild(sp); }); }
+let playing=false, timer, stepMs=750;
+scrub.addEventListener("input",()=>{ stop(); render(+scrub.value, true); pourPulse(900); });
+function stop(){ playing=false; pourPulse(400); clearInterval(timer); $("playicon").setAttribute("d","M4 2 L16 9 L4 16 Z"); $("play").setAttribute("aria-label","Play"); }
+function start(){ if(lastIdx>=N-1) { lastIdx=-1; render(0,false); }
+  playing=true; cyl.classList.add("pouring"); clearTimeout(pourTimer); $("playicon").setAttribute("d","M4 2 H7.5 V16 H4 Z M10.5 2 H14 V16 H10.5 Z"); $("play").setAttribute("aria-label","Pause");
+  timer=setInterval(()=>{ if(lastIdx>=N-1){ stop(); cyl.classList.remove("pouring"); return; } render(lastIdx+1, true); }, stepMs); }
+$("play").addEventListener("click",()=> playing?stop():start());
+
+// open at the end so the first frame shows the whole season
+render(N-1, false);
+
+// ---------- welcome note ----------
+const memo=$("memo");
+function closeMemo(){ memo.classList.add("closing"); setTimeout(()=>{ memo.hidden=true; memo.classList.remove("closing"); $("about").focus(); }, reduce?0:250); }
+function openMemo(){ memo.hidden=false; $("memo-go").focus(); }
+$("memo-x").addEventListener("click",closeMemo);
+$("memo-go").addEventListener("click",closeMemo);
+memo.addEventListener("click",e=>{ if(e.target===memo) closeMemo(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !memo.hidden) closeMemo(); });
+$("about").addEventListener("click",openMemo);
+$("memo-card").focus();
+</script>
+
+</body>
+</html>
